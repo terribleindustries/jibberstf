@@ -18,7 +18,6 @@ resource "aws_route53_record" "movienight" {
 ########
 
 resource "null_resource" "lambda_package" {
-  # asuming this is run from a cookbook/terraform directory
   provisioner "local-exec" {
     command = "rm -f lambda_function_payload.zip ; zip lambda_function_payload.zip function.py"
   }
@@ -53,17 +52,18 @@ EOF
 ########
 
 resource "aws_cloudwatch_event_rule" "new_instance" {
-  name        = "capture-ec2-scaling-events"
-  description = "Capture all EC2 scaling events"
+  name        = "instance-state-change"
+  description = "Capture all EC2 state change events"
 
   event_pattern = <<PATTERN
 {
   "source": [
-    "aws.state-change"
+    "aws.ec2"
   ],
   "detail-type": [
     "EC2 Instance State-change Notification"
-  ]
+  ],
+  "detail": {}
 }
 PATTERN
 }
@@ -101,7 +101,8 @@ resource "aws_lambda_function" "dns_lambda" {
 
   environment {
     variables = {
-      foo = "bar"
+      RECORD_NAME = "${var.route53_domain}",
+      ZONE_ID = "${data.aws_route53_zone.movienight.zone_id}"
     }
   }
 }
