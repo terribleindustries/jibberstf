@@ -1,10 +1,12 @@
 import boto3
 import os
 
-github_ips = '''185.199.108.153
-185.199.109.153
-185.199.110.153
-185.199.111.153'''
+# 185.199.108.153
+# 185.199.109.153
+# 185.199.110.153
+# 185.199.111.153
+
+github_ips = '185.199.108.153'
 
 def change_record(ip_address):
     record_name = os.environ.get('RECORD_NAME')
@@ -32,7 +34,7 @@ def change_record(ip_address):
         }
     )
 
-def change_record(state, ip_address):
+def update_record(state, ip_address):
     if state in ['pending', 'running']:
         # Switch to this instance
         change_record(ip_address)
@@ -65,9 +67,9 @@ def my_handler(event, context):
     state = event['detail']['state']
     client = boto3.client('ec2')
     details = client.describe_instances(InstanceIds=[instance_id,])
-    tags = details['Reservations']['Instances'][0]['Tags']
-    ip_address = details['Reservations']['Instances'][0]['PublicIpAddress']
+    tags = details['Reservations'][0]['Instances'][0]['Tags']
+    ip_address = details['Reservations'][0]['Instances'][0]['PublicIpAddress']
     for tag in tags:
         if tag['Key'] == 'movienight':
-            change_record(state, ip_address)
+            update_record(state, ip_address)
 

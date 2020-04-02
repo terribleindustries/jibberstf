@@ -6,12 +6,12 @@ data "aws_route53_zone" "movienight" {
   name         = "${var.route53_domain}"
 }
 
-resource "aws_route53_record" "movienight" {
-  zone_id = "${data.aws_route53_zone.movienight.zone_id}"
-  name    = "${var.route53_domain}"
-  type    = "A"
-  ttl     = "300"
-}
+# resource "aws_route53_record" "movienight" {
+#   zone_id = "${data.aws_route53_zone.movienight.zone_id}"
+#   name    = "${var.route53_domain}"
+#   type    = "A"
+#   ttl     = "300"
+# }
 
 ########
 # Zip
@@ -66,12 +66,18 @@ resource "aws_iam_policy" "movienight_dns" {
 EOF
 }
 
-resource "aws_iam_role_policy_attachment" "test-attach" {
+resource "aws_iam_role_policy_attachment" "ec2-read-only" {
   role       = "${aws_iam_role.movienight_dns.name}"
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess"
 }
 
-resource "aws_iam_role_policy_attachment" "test-attach" {
+
+resource "aws_iam_role_policy_attachment" "lambda" {
+  role       = "${aws_iam_role.movienight_dns.name}"
+  policy_arn = "arn:aws:iam::aws:policy/AWSLambdaExecute"
+}
+
+resource "aws_iam_role_policy_attachment" "dns-manage-policy" {
   role       = "${aws_iam_role.movienight_dns.name}"
   policy_arn = "${aws_iam_policy.movienight_dns.arn}"
 }
@@ -92,13 +98,22 @@ resource "aws_cloudwatch_event_rule" "new_instance" {
   "detail-type": [
     "EC2 Instance State-change Notification"
   ],
-  "detail": {}
+  "detail": {
+    "state": [
+      "pending",
+      "running",
+      "shutting-down",
+      "stopped",
+      "stopping",
+      "terminated"
+    ]
+}
 }
 PATTERN
 }
 
 resource "aws_cloudwatch_event_target" "new_instance" {
-    rule = "${aws_cloudwatch_event_rule.new_instance}"
+    rule = "${aws_cloudwatch_event_rule.new_instance.name}"
     target_id = "check_foo"
     arn = "${aws_lambda_function.dns_lambda.arn}"
 }
@@ -118,7 +133,7 @@ resource "aws_lambda_permission" "allow_cloudwatch_to_call_new_instance" {
 resource "aws_lambda_function" "dns_lambda" {
   filename      = "lambda_function_payload.zip"
   function_name = "movienight-dns"
-  role          = "${aws_iam_role.iam_for_lambda.arn}"
+  role          = "${aws_iam_role.movienight_dns.arn}"
   handler       = "function.my_handler"
 
   # The filebase64sha256() function is available in Terraform 0.11.12 and later
