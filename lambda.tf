@@ -27,8 +27,8 @@ resource "null_resource" "lambda_package" {
 # IAM
 ########
 
-resource "aws_iam_role" "iam_for_lambda" {
-  name = "iam_for_lambda"
+resource "aws_iam_role" "movienight_dns" {
+  name = "movienight_dns"
 
   assume_role_policy = <<EOF
 {
@@ -45,6 +45,35 @@ resource "aws_iam_role" "iam_for_lambda" {
   ]
 }
 EOF
+}
+
+resource "aws_iam_policy" "movienight_dns" {
+  name        = "movienight-dns-policy"
+  description = "A policy to allow writing to dns"
+
+  policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": "route53:ChangeResourceRecordSets",
+            "Resource": "arn:aws:route53:::hostedzone/${data.aws_route53_zone.movienight.zone_id}"
+        }
+    ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "test-attach" {
+  role       = "${aws_iam_role.movienight_dns.name}"
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "test-attach" {
+  role       = "${aws_iam_role.movienight_dns.name}"
+  policy_arn = "${aws_iam_policy.movienight_dns.arn}"
 }
 
 ########
