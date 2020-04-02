@@ -34,10 +34,10 @@ def change_record(ip_address):
         }
     )
 
-def update_record(state, ip_address):
+def update_record(state, instance_details):
     if state in ['pending', 'running']:
         # Switch to this instance
-        change_record(ip_address)
+        change_record(instance_details['PublicIpAddress'])
     elif state in ['shutting-down', 'stopped', 'stopping', 'terminated']:
         # Switch to remote site
         change_record(github_ips)
@@ -68,8 +68,8 @@ def my_handler(event, context):
     client = boto3.client('ec2')
     details = client.describe_instances(InstanceIds=[instance_id,])
     tags = details['Reservations'][0]['Instances'][0]['Tags']
-    ip_address = details['Reservations'][0]['Instances'][0]['PublicIpAddress']
+    instance_details = details['Reservations'][0]['Instances'][0]
     for tag in tags:
         if tag['Key'] == 'movienight':
-            update_record(state, ip_address)
+            update_record(state, instance_details)
 
