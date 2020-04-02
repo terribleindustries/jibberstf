@@ -149,4 +149,5 @@ resource "aws_lambda_function" "dns_lambda" {
       ZONE_ID = "${data.aws_route53_zone.movienight.zone_id}"
     }
   }
+  depends_on = [ "null_resource.lambda_package" ]
 }
