@@ -3,7 +3,7 @@
 ########
 
 data "aws_route53_zone" "movienight" {
-  name         = "${var.route53_domain}"
+  name         = "${var.route53_base_domain}"
 }
 
 # resource "aws_route53_record" "movienight" {
